@@ -1,10 +1,10 @@
 import pandas
 import pandas as pd
-"""
+#"""
 import tensorflow as tf
 from keras.models import Sequential
 from keras.layers import Activation, Dense
-"""
+
 from ff import FF
 from matplotlib import pyplot as plt
 
@@ -33,23 +33,32 @@ def preprocess_data(X: pd.DataFrame, y: pd.Series):
     X.drop(columns=["hotel_country_code", "accommadation_type_name", "charge_option", "guest_nationality_country_name", "language", "original_payment_type", "cancellation_policy_code", "booking_datetime", "checkin_date", "checkout_date",  "hotel_brand_code", "hotel_chain_code", "original_payment_method","h_booking_id", "hotel_id", "hotel_area_code", "hotel_live_date", "h_customer_id", "customer_nationality", "origin_country_code", "original_payment_currency", "is_user_logged_in"], inplace=True)
     X.dropna(inplace=True)
 
-    y = y.notnull().astype(int).fillna(0)
+    """
+    y[y.notnull() == False] = -1
+    y[y != -1] = 1
+    """
+    y = y.notnull().astype(int)
 
     X = np.float64(X)
-    y = np.float64([y])
+    y = np.float64(y)
 
     return X, y
 
 
 def generate_model():
     model = Sequential()
-    model.add(tf.keras.Input(shape=(26,))) #256*256
+    model.add(tf.keras.layers.Dense(26, activation='relu'))
     model.add(tf.keras.layers.Dense(10, activation='relu'))
-    model.add(tf.keras.layers.Dense(5, activation='relu'))
-    model.add(tf.keras.layers.Dense(1, activation='relu'))
-    model.compile(optimizer='adam',
-                  loss='categorical_crossentropy',
-                  metrics=['accuracy'])
+    model.add(tf.keras.layers.Dense(10, activation='relu'))
+    model.add(tf.keras.layers.Dense(1, activation='sigmoid'))
+    model.compile(
+    loss=tf.keras.losses.binary_crossentropy,
+    optimizer=tf.keras.optimizers.Adam(lr=0.03),
+    metrics=[
+        tf.keras.metrics.BinaryAccuracy(name='accuracy'),
+        tf.keras.metrics.Precision(name='precision'),
+        tf.keras.metrics.Recall(name='recall')
+    ])
 
     return model
 
@@ -68,10 +77,13 @@ if __name__ == "__main__":
     X_tr, y_tr = preprocess_data(X_tr, y_tr)
     X_tst, y_tst = preprocess_data(X_tst, y_tst)
 
-    """
     model = generate_model()
-    model.fit(X_tr, y_tr, epochs=100000)#, verbose=True)  # , steps_per_epoch=50)
-    print()
+    model.fit(X_tr, y_tr, epochs=100)#, verbose=True)  # , steps_per_epoch=50)
+
+    y_pred = model.predict(X_tst)
+    y_pred = np.where(y_pred<0.5, 0, 1)
+    print(np.sum(np.abs(y_pred.T - y_tst))/len(y_tst))
+
     """
     net = FF(layers_sizes)
     steps, test_acc = net.sgd(X_tr.T, y_tr.T, epochs, eta, batch_size, X_tst.T, y_tst.T)
@@ -82,3 +94,4 @@ if __name__ == "__main__":
     plt.xlabel('steps')
     plt.ylabel('acc')
     plt.show()
+    """

@@ -33,14 +33,8 @@ def preprocess_data(X: pd.DataFrame, y: pd.Series):
     X['payment_type_one_hot'] = pd.factorize(X['original_payment_type'])[0]
     X['cancellation_policy_one_hot'] = pd.factorize(X['cancellation_policy_code'])[0]
     X['is_first_booking'] = pd.factorize(X['is_first_booking'])[0]
-    """
-    X['original_selling_amount'] = X['original_selling_amount']/np.max(X['original_selling_amount'])
-    X['hotel_city_code'] = X['hotel_city_code']/np.max(X['hotel_city_code'])
-    X['booking_day'] = X['booking_day']/np.max(X['booking_day'])
-    X['check_in'] = X['check_in'] / np.max(X['check_in'])
-    X['check_out'] = X['check_out']/ np.max(X['check_out'])
-    X['hotel_star_rating'] = X['hotel_star_rating']
-    """
+    X['cancellation_policy_code'] = pd.factorize(X['cancellation_policy_code'])[0]
+
     ls = {'request_nonesmoke':0.5, 'request_latecheckin':0.5, 'request_highfloor':0.5, 'request_largebed':0.5, 'request_twinbeds':0.5, 'request_airport':0.5, 'request_earlycheckin':0.5}
     X.fillna(ls, inplace=True)
 
@@ -64,9 +58,9 @@ def preprocess_data(X: pd.DataFrame, y: pd.Series):
 
 def generate_model():
     model = Sequential()
-    model.add(tf.keras.layers.Dense(27, activation='relu'))
-    model.add(tf.keras.layers.Dense(10, activation='relu'))
-    model.add(tf.keras.layers.Dense(10, activation='relu'))
+    model.add(tf.keras.layers.Dense(28, activation='relu'))
+    model.add(tf.keras.layers.Dense(15, activation='relu'))
+    model.add(tf.keras.layers.Dense(15, activation='relu'))
     model.add(tf.keras.layers.Dense(2, activation='sigmoid'))
     model.compile(
     loss=tf.keras.losses.binary_crossentropy,
@@ -93,16 +87,17 @@ def prepare_data(df: pd.DataFrame):
     y = df.pop("cancellation_datetime")
     X = df
     X, y, id = preprocess_data(X, y)
-    """
+
     X_tr, y_tr, X_tst, y_tst = split_train_test(X, y)
-    """
+
 
     id_tr = id[y.index]
-    #id_tst = id[y_tst.index]
+    id_tst = id[y_tst.index]
 
-    y = encode(y)
+    y_tr = encode(y_tr)
+    y_tst = encode(y_tst)
 
-    return X, y, id_tr
+    return X_tr, y_tr, X_tst, y_tst, id_tr, id_tst
 
 
 def predict_and_test(X, model, id, test_num):
@@ -122,12 +117,12 @@ if __name__ == "__main__":
     np.random.seed(0)
     df = pandas.read_csv("agoda_cancellation_train.csv")
 
-    X_tr, y_tr, id_tr= prepare_data(df)
+    X_tr, y_tr, X_tst, y_tst, id_tr, id_tst = prepare_data(df)
 
     model = generate_model()
-    model.fit(X_tr, y_tr, epochs=20)#, verbose=True, steps_per_epoch=200)
+    model.fit(X_tr, y_tr, epochs=100)#, verbose=True, steps_per_epoch=200)
 
-    evaluate(X_tr, y_tr, model)
+    evaluate(X_tst, y_tst, model)
 
     X = pandas.read_csv("Agoda_Test_1.csv")
     X, y, id = preprocess_data(X, pd.Series())

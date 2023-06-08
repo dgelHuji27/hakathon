@@ -53,6 +53,7 @@ def preprocess_data(X: pd.DataFrame, y: pd.Series):
     y[y.notnull() == False] = -1
     y[y != -1] = 1
     """
+
     y = y.notnull().astype(int)
 
     #X = np.float64(X)
@@ -88,27 +89,50 @@ def encode(y: np.array):
 def decode(y: np.array):
     return (y[:, 0] > y[:, 1])*1
 
+def prepare_data(df: pd.DataFrame):
+    y = df.pop("cancellation_datetime")
+    X = df
+    X, y, id = preprocess_data(X, y)
+    """
+    X_tr, y_tr, X_tst, y_tst = split_train_test(X, y)
+    """
+
+    id_tr = id[y.index]
+    #id_tst = id[y_tst.index]
+
+    y = encode(y)
+
+    return X, y, id_tr
+
+
+def predict_and_test(X, model, id, test_num):
+    pred = model.predict(X)
+
+    pred = decode(pred)
+    pd_df = pd.DataFrame({"id":id, "vals": pred})
+    pd_df.to_csv(index=False, path_or_buf=f'pred_tst_{test_num}.csv')
+
+def evaluate(X, y, model):
+    pred = model.predict(X)
+    y = decode(y)
+    pred = decode(pred)
+    print("correctly classified:", np.sum(y != pred)/len(y))
 
 if __name__ == "__main__":
     np.random.seed(0)
     df = pandas.read_csv("agoda_cancellation_train.csv")
-    y = df.pop("cancellation_datetime")
-    X = df
-    X, y, id = preprocess_data(X, y)
-    X_tr, y_tr, X_tst, y_tst = split_train_test(X, y)
 
-    id_tr = id[y_tr.index]
-    id_tst = id[y_tst.index]
-
-    y_tr = encode(y_tr)
+    X_tr, y_tr, id_tr= prepare_data(df)
 
     model = generate_model()
     model.fit(X_tr, y_tr, epochs=20)#, verbose=True, steps_per_epoch=200)
 
-    y_pred = model.predict(X_tst)
-    y_pred = decode(y_pred)
-    #y_pred = np.where(y_pred<0.5, 0, 1)
-    print(np.sum(np.abs(y_pred - y_tst))/len(y_tst))
-    pd_df = pd.DataFrame({"id":id_tst, "vals": y_pred})
-    pd_df.to_csv(index=False, path_or_buf='predict_1.csv')
+    evaluate(X_tr, y_tr, model)
+
+    X = pandas.read_csv("Agoda_Test_1.csv")
+    X, y, id = preprocess_data(X, pd.Series())
+    predict_and_test(X, model, id, 1)
+
+
+
 

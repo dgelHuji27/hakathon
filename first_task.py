@@ -20,9 +20,9 @@ from utils import split_train_test
 
 
 def preprocess_data(X: pd.DataFrame, y: pd.Series):
-    X['booking_day'] = pd.to_datetime(df['booking_datetime']).dt.dayofyear
-    X['check_in'] = pd.to_datetime(df['checkin_date']).dt.dayofyear
-    X['check_out'] = pd.to_datetime(df['checkout_date']).dt.dayofyear
+    X['booking_day'] = pd.to_datetime(X['booking_datetime']).dt.dayofyear
+    X['check_in'] = pd.to_datetime(X['checkin_date']).dt.dayofyear
+    X['check_out'] = pd.to_datetime(X['checkout_date']).dt.dayofyear
     #X['hotel_county_code_one_hot'] = pd.Categorical(X['hotel_country_code']).cat.codes
     X['h_customer_one_hot'] = pd.factorize(X['h_customer_id'])[0]
     X['hotel_county_code_one_hot'] = pd.factorize(X['hotel_country_code'])[0]
